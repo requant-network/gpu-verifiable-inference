@@ -1,0 +1,18 @@
+name: CPU references and research artifact integrity
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m compileall -q -x 'build|upstream' .
+      - run: python verify_records.py
+      - run: python prepare_full.py build/FlashProve
+      - run: verifier/build.sh
+        working-directory: build/FlashProve
+      - run: python cpu_study.py build/FlashProve --output build/ci-verifier.json

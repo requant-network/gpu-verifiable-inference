@@ -1,0 +1,238 @@
+diff --git a/prover/build.sh b/prover/build.sh
+index bb0a806..46f52c3 100644
+--- a/prover/build.sh
++++ b/prover/build.sh
+@@ -631,7 +631,7 @@ nvcc_base=(nvcc -O3 -std=c++17 "-arch=$gpu_arch" --extended-lambda --default-str
+ # nvtx3/nvtxDetail/nvtxInit.h). No program here uses NVTX. tests/serving_build_words.txt has that
+ # name, so a production program that contains it is not installed.
+ # SM120 uses one shared tile per operand instead of Hopper's double/triple buffering.
+-if [[ $gpu_arch == sm_120a ]]; then nvcc_base+=(-DEXPERTS_IN_ONE_LAUNCH=1 -DFLASH_EXPERT_COMPACT=1); fi
++if [[ $gpu_arch == sm_120a ]]; then nvcc_base+=(-DEXPERTS_IN_ONE_LAUNCH=1 -DFLASH_EXPERT_COMPACT=1 -DFLASH_SM120_MEMORY=1 -DFOREST_FUSED=0); fi
+ nvcc_base+=(-lcublasLt "${field_flags[@]}")
+ # EIDB and ETAU, if the environment sets them.
+ form=()
+diff --git a/prover/engine/fold.cuh b/prover/engine/fold.cuh
+index 2e33754..8489b29 100644
+--- a/prover/engine/fold.cuh
++++ b/prover/engine/fold.cuh
+@@ -1396,9 +1396,14 @@ private:
+     // A pitch of 4 words past a multiple of 32: eight rows' words meet no shared-memory bank twice.
+     const u32 n = (u32)narrow_.size(), padded = (n + 7) / 8 * 8, pitch = (4 * padded + 127) / 128 * 128 + 16;
+     const size_t room = fold_bytes_room(pitch, padded);
+-    if (room > (size_t)100 << 10) return false; // (two blocks on a multiprocessor)
++#if FLASH_SM120_MEMORY
++    constexpr size_t shared_limit = 96 << 10;
++#else
++    constexpr size_t shared_limit = 100 << 10;
++#endif
++    if (room > shared_limit) return false; // use the existing exact fallback
+     static const bool set = [] {
+-      ENGINE_CK_ATTRIBUTE(k_fold_combine_bytes, cudaFuncAttributeMaxDynamicSharedMemorySize, 100 << 10);
++      ENGINE_CK_ATTRIBUTE(k_fold_combine_bytes, cudaFuncAttributeMaxDynamicSharedMemorySize, shared_limit);
+       return true;
+     }();
+     (void)set;
+diff --git a/prover/engine/tiled.cuh b/prover/engine/tiled.cuh
+index 0505fec..8481963 100644
+--- a/prover/engine/tiled.cuh
++++ b/prover/engine/tiled.cuh
+@@ -95,7 +95,11 @@ constexpr unsigned TILED_THREADS = 256;
+ constexpr unsigned TILED_M = 128, TILED_N = 128; // a block's planes, and its rows of columns' bytes
+ constexpr unsigned TILED_COLUMNS = TILED_N / 8;
+ constexpr unsigned TILED_STEP = 128;              // places copied to shared memory in one step
++#if FLASH_SM120_MEMORY
++constexpr unsigned TILED_STAGES = 2;
++#else
+ constexpr unsigned TILED_STAGES = 3;
++#endif
+ constexpr unsigned TILED_PARTS = TILED_STEP / 16; // 16-byte pieces of one row in a step
+ constexpr unsigned TILED_PITCH = TILED_STEP + 16; // bytes from one row of a tile to the next
+ constexpr unsigned TILED_STAGE_BYTES = (TILED_M + TILED_N) * TILED_PITCH;
+diff --git a/prover/hash_commitment/hf_range_windows.cuh b/prover/hash_commitment/hf_range_windows.cuh
+index bb02436..338cdbe 100644
+--- a/prover/hash_commitment/hf_range_windows.cuh
++++ b/prover/hash_commitment/hf_range_windows.cuh
+@@ -345,10 +345,17 @@ __device__ __forceinline__ u32 key_of(const uint4 &v, int e) {
+ // Adds to counters[(b << k) + t] the number of the 8 n8 keys with the value t and an index equal to
+ // b modulo 2^iota. Thread blocks with blockIdx.y = y count identities y 2^lib to (y+1) 2^lib - 1,
+ // in 2^(lib + k) words of shared memory. Keys of 2^k or more are not counted. gridDim.x is free.
++#if FLASH_SM120_MEMORY
++constexpr int RANGE_COUNT_BITS = 14;
++#else
++constexpr int RANGE_COUNT_BITS = 15;
++#endif
+ __global__ void __launch_bounds__(512)
+     k_count(const u16 *__restrict__ keys, size_t n8, int iota, int k, int lib, u32 *__restrict__ counters) {
+   extern __shared__ u32 bins[];
+-  const u32 words = 1u << (lib + k), mask = (1u << iota) - 1, from = blockIdx.y << lib, to = from + (1u << lib);
++  const int bits = lib + k < RANGE_COUNT_BITS ? lib + k : RANGE_COUNT_BITS;
++  const u32 words = 1u << bits, bin_start = blockIdx.z << bits;
++  const u32 mask = (1u << iota) - 1, from = blockIdx.y << lib, to = from + (1u << lib);
+   for (u32 x = threadIdx.x; x < words; x += blockDim.x) bins[x] = 0;
+   __syncthreads();
+   GSL(q, n8) {
+@@ -359,13 +366,15 @@ __global__ void __launch_bounds__(512)
+     for (int x = 0; x < 8; x++) {
+       const int e = (x + threadIdx.x) & 7;
+       const u32 b = (b0 + e) & mask, t = key_of(v, e);
+-      if (b >= from && b < to && !(t >> k)) atomicAdd(&bins[((b - from) << k) + t], 1u);
++      const u32 bin = ((b - from) << k) + t;
++      if (b >= from && b < to && !(t >> k) && bin >= bin_start && bin - bin_start < words)
++        atomicAdd(&bins[bin - bin_start], 1u);
+     }
+   }
+   __syncthreads();
+   // Every bin is added, an empty one too: a count is a hidden value, and no work is skipped because
+   // one is 0.
+-  for (u32 x = threadIdx.x; x < words; x += blockDim.x) atomicAdd(&counters[((size_t)from << k) + x], bins[x]);
++  for (u32 x = threadIdx.x; x < words; x += blockDim.x) atomicAdd(&counters[((size_t)from << k) + bin_start + x], bins[x]);
+ }
+ // Subtracts the padding keys, pub in each identity, from the count of the value 0.
+ __global__ void k_less_padding(u32 *counters, int iota, int k, u32 pub) {
+@@ -555,9 +564,10 @@ struct RangeWindows {
+   // Adds call f's counts, padding keys excluded, to its 2^(k_f + iota) counters. keys: as in lay().
+   void count(u32 f, const u16 *keys, u32 *counters_of_f, cudaStream_t st) const {
+     const int iota = plan_->iota, k = plan_->c[f].k, lib = std::min(iota, std::max(0, COUNT_BITS - k));
+-    if (k > COUNT_BITS) stop("a table has more rows than the counting kernel's shared memory holds");
+-    const size_t shared = (size_t)4 << (lib + k);
+-    const dim3 grid((unsigned)processors_ * (shared <= (48 << 10) ? 4 : 1), 1u << (iota - lib));
++    if (k > 15) stop("a table has more rows than the counting kernel supports");
++    const int bits = std::min(lib + k, COUNT_BITS);
++    const size_t shared = (size_t)4 << bits;
++    const dim3 grid((unsigned)processors_ * (shared <= (48 << 10) ? 4 : 1), 1u << (iota - lib), 1u << (lib + k - bits));
+     range_windows::k_count<<<grid, 512, shared, st>>>(keys, (size_t)1 << (plan_->n - 3), iota, k, lib, counters_of_f);
+     CK(cudaGetLastError());
+     range_windows::k_less_padding<<<1, 256, 0, st>>>(counters_of_f, iota, k, plan_->c[f].pub);
+@@ -698,7 +708,7 @@ struct RangeWindows {
+   size_t jobs() const { return jobs_.size(); }
+ 
+ private:
+-  static constexpr int COUNT_BITS = 15; // the counting kernel's bins: 2^15 words, 128 KiB of shared memory
++  static constexpr int COUNT_BITS = range_windows::RANGE_COUNT_BITS; // public bin windows, at most 64 KiB on SM120
+   static constexpr size_t NO_UNIT = ~(size_t)0, NOT_COVERED = ~(size_t)0 - 1;
+   struct Unit {
+     ::hfw::FoldUnit u;  // index rules; each `step` is for the model file's order
+diff --git a/prover/hiding/count_keys16.cuh b/prover/hiding/count_keys16.cuh
+index b6bf385..e673cf6 100644
+--- a/prover/hiding/count_keys16.cuh
++++ b/prover/hiding/count_keys16.cuh
+@@ -41,13 +41,19 @@
+ // page "C/C++ Language Extensions", "#pragma unroll",
+ // https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html;
+ // the block-stride loop: shown in a listing on the page "Writing SIMT Kernels", cited above.
++#if FLASH_SM120_MEMORY
++constexpr int COUNT16_BITS = 14;
++#else
++constexpr int COUNT16_BITS = 15;
++#endif
++constexpr int COUNT16_BINS = 1 << COUNT16_BITS;
+ __global__ void k_count_keys16(const uint4 *keys, size_t nvb, int bpi, u32 *outAll) {
+   extern __shared__ u32 bins[];
+   const int b = blockIdx.x / bpi, w = blockIdx.x % bpi;
+   const uint4 *kb = keys + (size_t)b * nvb;
+   u32 *out = outAll + ((size_t)b << 16);
+-  for (u32 half = 0; half < 2; half++) {
+-    for (int i = threadIdx.x; i < 32768; i += blockDim.x) bins[i] = 0;
++  for (u32 half = 0; half < (1u << (16 - COUNT16_BITS)); half++) {
++    for (int i = threadIdx.x; i < COUNT16_BINS; i += blockDim.x) bins[i] = 0;
+     __syncthreads();
+     for (size_t i = w * (size_t)blockDim.x + threadIdx.x; i < nvb; i += (size_t)bpi * blockDim.x) {
+       uint4 v = kb[i];
+@@ -55,11 +61,11 @@ __global__ void k_count_keys16(const uint4 *keys, size_t nvb, int bpi, u32 *outA
+ #pragma unroll
+       for (int a = 0; a < 8; a++) {
+         const u32 k = (x[a >> 1] >> (16 * (a & 1))) & 65535u;
+-        if (k >> 15 == half) atomicAdd(&bins[k & 32767u], 1u);
++        if (k >> COUNT16_BITS == half) atomicAdd(&bins[k & (COUNT16_BINS - 1)], 1u);
+       }
+     }
+     __syncthreads();
+-    for (int c = threadIdx.x; c < 32768; c += blockDim.x) atomicAdd(&out[half * 32768u + c], bins[c]);
++    for (int c = threadIdx.x; c < COUNT16_BINS; c += blockDim.x) atomicAdd(&out[half * COUNT16_BINS + c], bins[c]);
+     __syncthreads();
+   }
+ }
+@@ -67,10 +73,10 @@ __global__ void k_count_keys16(const uint4 *keys, size_t nvb, int bpi, u32 *outA
+ // first. The 131072-byte limit is set at the first call only, for the device then current.
+ static inline void count_keys16(const uint4 *keys, size_t nvb, int bpi, int identities, u32 *out, cudaStream_t stream) {
+   static const bool once = [] {
+-    CK_ATTRIBUTE(k_count_keys16, cudaFuncAttributeMaxDynamicSharedMemorySize, 131072);
++    CK_ATTRIBUTE(k_count_keys16, cudaFuncAttributeMaxDynamicSharedMemorySize, 4 * COUNT16_BINS);
+     return true;
+   }();
+   (void)once;
+-  k_count_keys16<<<identities * bpi, 1024, 131072, stream>>>(keys, nvb, bpi, out);
++  k_count_keys16<<<identities * bpi, 1024, 4 * COUNT16_BINS, stream>>>(keys, nvb, bpi, out);
+   CK(cudaGetLastError());
+ }
+diff --git a/prover/hiding/forest_table.cuh b/prover/hiding/forest_table.cuh
+index 8ae09bc..07d2765 100644
+--- a/prover/hiding/forest_table.cuh
++++ b/prover/hiding/forest_table.cuh
+@@ -478,7 +478,11 @@ struct ForestTable {
+     PA(et.Gcb, (((nlo << (kT - 5)) >> 14) + 2) * 1024, 2);
+     PA(et.X, 32ull << lmid, 2);
+     et.solo = solo;
++#if FLASH_SM120_MEMORY
++    CK_ATTRIBUTE(h_idk<1>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
++#else
+     CK_ATTRIBUTE(h_idk<1>, cudaFuncAttributeMaxDynamicSharedMemorySize, 131072);
++#endif
+   }
+   // prove() needs this many elements of T at `room`, 256-byte aligned. Level l starts at element
+   // nlo (2^l - 1). Nothing there is needed between two calls.
+@@ -499,7 +503,11 @@ struct ForestTable {
+     else if (k <= 10)
+       h_idk<8><<<g_sms * 2, 512, (size_t)32 << k, g_st>>>(kk, words, g_sms * 2, k, to);
+     else
++#if FLASH_SM120_MEMORY
++      h_idk<1><<<g_sms * 2, 512, (size_t)4 << std::min(k, 14), g_st>>>(kk, words, g_sms * 2, k, to);
++#else
+       h_idk<1><<<g_sms * 2, 512, (size_t)4 << k, g_st>>>(kk, words, g_sms * 2, k, to);
++#endif
+     CK(cudaGetLastError());
+     if (pub)
+       ft::k_pub_call<<<1, 1, 0, g_st>>>(to + calls[c].t0, pub, pubo + keys.first[c], I);
+diff --git a/prover/hiding/product_test.cuh b/prover/hiding/product_test.cuh
+index 7747c2f..d04e497 100644
+--- a/prover/hiding/product_test.cuh
++++ b/prover/hiding/product_test.cuh
+@@ -79,22 +79,33 @@ __global__ void k_th(const u32 *in, size_t n, u32 *out, u32 num) {
+ template <int REP> __global__ void h_idk(const uint4 *keys, size_t nvb, int bpi, int k, u32 *outAll) {
+   extern __shared__ u32 bins[];
+   const int nb = 1 << k;
+-  for (int i = threadIdx.x; i < nb * REP; i += blockDim.x) bins[i] = 0;
+-  __syncthreads();
++#if FLASH_SM120_MEMORY
++  const int window = nb < 16384 / REP ? nb : 16384 / REP;
++#else
++  const int window = nb;
++#endif
+   const int b = blockIdx.x / bpi, w = blockIdx.x % bpi, rp = threadIdx.x % REP;
+   const uint4 *kb = keys + (size_t)b * nvb;
+   u32 *out = outAll + ((size_t)b << k);
++  for (int start = 0; start < nb; start += window) {
++  for (int i = threadIdx.x; i < window * REP; i += blockDim.x) bins[i] = 0;
++  __syncthreads();
+   for (size_t i = w * (size_t)blockDim.x + threadIdx.x; i < nvb; i += (size_t)bpi * blockDim.x) {
+     uint4 v = kb[i];
+     u32 x[4] = {v.x, v.y, v.z, v.w};
+ #pragma unroll
+-    for (int a = 0; a < 8; a++) atomicAdd(&bins[((x[a >> 1] >> (16 * (a & 1))) & (nb - 1)) * REP + rp], 1u);
++    for (int a = 0; a < 8; a++) {
++      const int key = (x[a >> 1] >> (16 * (a & 1))) & (nb - 1);
++      if (key >= start && key - start < window) atomicAdd(&bins[(key - start) * REP + rp], 1u);
++    }
+   }
+   __syncthreads();
+-  for (int c = threadIdx.x; c < nb; c += blockDim.x) {
++  for (int c = threadIdx.x; c < window; c += blockDim.x) {
+     u32 s = 0;
+     for (int r = 0; r < REP; r++) s += bins[c * REP + (r + threadIdx.x) % REP];
+-    atomicAdd(&out[c], s);
++    atomicAdd(&out[start + c], s);
++  }
++  __syncthreads();
+   }
+ }
+ // The 8-to-1 fold after the three rounds that bind the slab number a: k8[a] = eq(challenges, a).

@@ -1,0 +1,37 @@
+--- a/prover/build.sh
++++ b/prover/build.sh
+@@ -614,7 +614,12 @@
+   file_of device-compiler "$middle/cicc" || return 1
+   file_of device-assembler "$(PATH=$looks command -v ptxas)"
+ }
+-nvcc_base=(nvcc -O3 -std=c++17 -arch=sm_90a --extended-lambda --default-stream per-thread -I. -Xcompiler -fno-ipa-modref -DCCCL_DISABLE_NVTX -DDIGEST_WORDS=$dw)
++gpu_arch=${FLASH_GPU_ARCH:-sm_90a}
++case $gpu_arch in
++  sm_90a | sm_120a) ;;
++  *) echo "build.sh: FLASH_GPU_ARCH must be sm_90a or sm_120a" >&2; exit 2 ;;
++esac
++nvcc_base=(nvcc -O3 -std=c++17 "-arch=$gpu_arch" --extended-lambda --default-stream per-thread -I. -Xcompiler -fno-ipa-modref -DCCCL_DISABLE_NVTX -DDIGEST_WORDS=$dw)
+ # -fno-ipa-modref, for the host compiler here and in the g++ lines below, works around a bug in g++
+ # 13.3.0, which can silently delete the stores that fill an object passed by reference
+ # (verifier/tests/compiler_pass_control.sh reproduces it). cuBLASLt is for
+@@ -625,6 +630,8 @@
+ # NVTX_INJECTION64_PATH with getenv() and loads the library named there (read in that header and in
+ # nvtx3/nvtxDetail/nvtxInit.h). No program here uses NVTX. tests/serving_build_words.txt has that
+ # name, so a production program that contains it is not installed.
++# The Hopper fused expert tile exceeds SM120 shared memory; retain the exact cuBLAS path.
++if [[ $gpu_arch == sm_120a ]]; then nvcc_base+=(-DEXPERTS_IN_ONE_LAUNCH=0); fi
+ nvcc_base+=(-lcublasLt "${field_flags[@]}")
+ # EIDB and ETAU, if the environment sets them.
+ form=()
+--- a/prover/weights_blocks/experts.cuh
++++ b/prover/weights_blocks/experts.cuh
+@@ -48,7 +48,9 @@
+ // alone. Both forms are meant to give the same sums.
+ // Three tests that are not part of this repository compare the sums with a plain kernel's: two
+ // test the selected form, and one tests both forms (it builds only at 1).
++#ifndef EXPERTS_IN_ONE_LAUNCH
+ #define EXPERTS_IN_ONE_LAUNCH 1
++#endif
+ #if EXPERTS_IN_ONE_LAUNCH
+ #include "weights_blocks/experts_in_one_launch.cuh"
+ #endif
