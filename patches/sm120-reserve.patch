@@ -1,0 +1,15 @@
+--- a/prover/hash_commitment/hf_commit_once.cuh
++++ b/prover/hash_commitment/hf_commit_once.cuh
+@@ -305,7 +305,12 @@
+ // recomputed in a pass to leave it. No formula gives what the engine needs, and much less than
+ // this can be too little. The run's last line
+ // prints the peak of the engine's pool. No byte of an output file depends on this number.
++#if FLASH_SM120_MEMORY
++// Consumer-card experiments reserve 4 GiB; allocation failures and pool-peak reporting remain.
++constexpr size_t HF_ONCE_ENGINE_ROOM = (size_t)4 << 30;
++#else
+ constexpr size_t HF_ONCE_ENGINE_ROOM = (size_t)24 << 30;
++#endif
+ // Added to the slab's computed size: while the slab exists, other code's small buffers come out of
+ // it too, since cudaMalloc is lent_memory.h's macro in the whole translation unit.
+ constexpr size_t HF_ONCE_SLAB_SPARE = (size_t)1 << 30;

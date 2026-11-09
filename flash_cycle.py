@@ -56,7 +56,9 @@ def main():
         record['commitment_id']=commitment_lines[0].split(':',1)[1].strip()
         public=Path('artifacts')/work.name;assert not public.exists();public.mkdir(parents=True)
         # Upstream duty: export output and its log only after native verification accepted.
-        for folder in ('config','ivk','in','out'):shutil.copytree(work/folder,public/folder)
+        for folder in ('config','ivk'):shutil.copytree(work/folder,public/folder)
+        for folder in ('in','out'):(public/folder).mkdir()
+        for name in ('in/example.req','out/example.y','out/example.proof'):shutil.copy2(work/name,public/name)
         for name in ('cp_commit.log','cp_prove.log','cp_verify.log'):
             data=(work/name).read_text().replace(str(work),'WORK').replace(str(checkout),'FLASH_PROVE').replace(str(Path.home()),'HOME')
             (public/name.replace('.log','.txt')).write_text(data,encoding='utf-8',newline='\n')

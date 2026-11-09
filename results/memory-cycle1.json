@@ -1,0 +1,37 @@
+{
+  "utc": "2026-11-09T06:05:36.247265+00:00",
+  "configuration": "target_small_f2_roomy",
+  "command": [
+    "prover/examples/run_target_example.sh",
+    "target_small_f2_roomy",
+    "WORK"
+  ],
+  "exit_code": 1,
+  "last_line": "cp_commit: the run has ended in the middle of a step: what that step had written is removed, and all that the call had made before it",
+  "accepted": false,
+  "script_output": "   $ cd WORK\n1. The public configuration: the parameter file, the scales, the layout of a proof's arrays\n   $ cp FLASH_PROVE/prover/examples/target_small_f2_roomy/policy.txt FLASH_PROVE/prover/examples/target_small_f2_roomy/KL.bin FLASH_PROVE/prover/examples/target_small_f2_roomy/layout.txt config/\n2. cp_commit draws a seed and commits to the weights: ivk/ is for the clients, isk/ stays with the provider\n   $ FLASH_PROVE/requant-profile-memory-cycle1/cp_commit -weights made-up-blocks -config config -M 1 -ivk ivk -isk isk > cp_commit.log 2>&1\nrun_target_example.sh: this step failed with status 2; the last lines of WORK/cp_commit.log:\ncp_commit: phase anchor-table: 0.7 s\nthe key file: the ranges: counting walks 0.0 s; 8 passes over a part's pieces: bases 0.1, matrix passes 0.0, storing passes 0.0, rounds in memory 0.2, sums by column 0.0\nthe key file: the ranges and the rows' vectors: 4.9 s\nthe key file: the GPU has too little free memory: nothing is left for the test on the table beside 2 GiB and the 25769803776 bytes that the engine is left, whatever the size of the model\ncp_commit: the run has ended in the middle of a step: what that step had written is removed, and all that the call had made before it\n",
+  "phases": [
+    {
+      "program": "cp_commit",
+      "exit_code": 2,
+      "wall_ms": 8069.5700230426155,
+      "peak_host_rss_kib": 924664
+    }
+  ],
+  "performance_claim": false,
+  "source_sha256": {
+    "profile_tool.py": "700240baad79aeb290510fba74abcb7401a4fbf2f04a586f51c6158cbd319eb3",
+    "experiments/history/flash_cycle_memory_v1.py": "686c505282b66890d9b3556ac1fa650a6b2d8cad01e20d415c1eee5f70b2da7c"
+  },
+  "binary_sha256": {
+    "cp_commit": "bdb090fb8df098e78ece6ec63a3d6b596766fe8b6439d145c1d1cd7d5c0dcea0",
+    "cp_prove": "e11724f9d243dcd98eedfd499260774a252c824760b9d5ee9bf01a02e92761a3",
+    "cp_verify": "7f9efc1e86a848a3715c6cc870e465ac2a1c5e8fd1eac09e4809023de7604394"
+  },
+  "upstream_script_sha256": "448b87fde31f9785d7be0dfc56c66cd59da772198bd96be33b23030e62262580",
+  "applied_diff_sha256": "b81cd533f9bd27ffb203f346389ea28a575df6ce271c467e09a95adb6a2e2d09",
+  "limitation": "No rejected response, proof or private proving-key material is exported. This is an unsuccessful compatibility experiment.",
+  "executed_source_aliases": {
+    "flash_cycle.py": "experiments/history/flash_cycle_memory_v1.py"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "utc": "2026-11-09T06:08:32.773130+00:00",
+  "seed": 20261109,
+  "cases": [
+    {
+      "pattern": "zero",
+      "threads": 32,
+      "exact_entries": 65536,
+      "shared_bytes": 256,
+      "output_sha256": "1558828aa3653db4d1c004aff8e422fde4a9ee6465ab381cd1a24b86f85be75d"
+    },
+    {
+      "pattern": "zero",
+      "threads": 256,
+      "exact_entries": 65536,
+      "shared_bytes": 256,
+      "output_sha256": "1558828aa3653db4d1c004aff8e422fde4a9ee6465ab381cd1a24b86f85be75d"
+    },
+    {
+      "pattern": "zero",
+      "threads": 512,
+      "exact_entries": 65536,
+      "shared_bytes": 256,
+      "output_sha256": "1558828aa3653db4d1c004aff8e422fde4a9ee6465ab381cd1a24b86f85be75d"
+    },
+    {
+      "pattern": "maximum",
+      "threads": 32,
+      "exact_entries": 65536,
+      "shared_bytes": 256,
+      "output_sha256": "ddd06c17a69e1bc5abbf7f145378ae30d1ae5c127f86692b964f92770a165b11"
+    },
+    {
+      "pattern": "maximum",
+      "threads": 256,
+      "exact_entries": 65536,
+      "shared_bytes": 256,
+      "output_sha256": "ddd06c17a69e1bc5abbf7f145378ae30d1ae5c127f86692b964f92770a165b11"
+    },
+    {
+      "pattern": "maximum",
+      "threads": 512,
+      "exact_entries": 65536,
+      "shared_bytes": 256,
+      "output_sha256": "ddd06c17a69e1bc5abbf7f145378ae30d1ae5c127f86692b964f92770a165b11"
+    },
+    {
+      "pattern": "random",
+      "threads": 32,
+      "exact_entries": 65536,
+      "shared_bytes": 256,
+      "output_sha256": "6d538dc896992439bdeba42341f945e0ce3d185d9bc62a4d16ac2f7ddf67fa8f"
+    },
+    {
+      "pattern": "random",
+      "threads": 256,
+      "exact_entries": 65536,
+      "shared_bytes": 256,
+      "output_sha256": "6d538dc896992439bdeba42341f945e0ce3d185d9bc62a4d16ac2f7ddf67fa8f"
+    },
+    {
+      "pattern": "random",
+      "threads": 512,
+      "exact_entries": 65536,
+      "shared_bytes": 256,
+      "output_sha256": "6d538dc896992439bdeba42341f945e0ce3d185d9bc62a4d16ac2f7ddf67fa8f"
+    }
+  ],
+  "source_sha256": {
+    "packed_validation.py": "6019ee50c3a9dfa79f44d07c705f2d41e1daf2c3f415db31dbbc63e69c25a907",
+    "patches/sm120-tables.patch": "eab649df02bf715804c4834155d925be09f06ea1c02163bf25c9a289e4e6992b"
+  },
+  "patched_sha256": {
+    "prover/hiding/forest_keys.cuh": "d6d4ba4f3a1d5d8b1d69c72fa6e8081af1f8fc20c034d65da79d18296f62dc11"
+  },
+  "generated_cuda_sha256": "ecdbe841d295883c4a821eb8c7a7bbeca79b2052a9cf63a4287db892f33af3eb",
+  "performance_claim": false,
+  "scope": "Verbatim Form<PackedSrc> initialization and value/bytes accessors, all 65536 public table entries. Minimal ByValues stub only checks visibility of shared constants; it does not test field quad() or the complete forest. Native full-proof verification remains required."
+}

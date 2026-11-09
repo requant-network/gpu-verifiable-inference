@@ -10,4 +10,7 @@
 *.txt text eol=lf
 *.yml text eol=lf
 *.bin binary
+*.proof binary
+*.req binary
+*.y binary
 *.patch text eol=lf

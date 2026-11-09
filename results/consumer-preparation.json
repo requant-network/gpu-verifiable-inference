@@ -1,0 +1,26 @@
+{
+  "upstream_revision": "9e2bdd8ff5bf9c62f18263d7dac189b0400b260c",
+  "source_sha256": {
+    "prepare_consumer.py": "903a626e23b7641ca67ab57256b2f9ee3c4571fa581fadd7b05e130a7942e96b",
+    "prepare_full.py": "3e49ec570f430df36a9164fa3a77c4a4124c6e4c4deedcebd92ab49704c062e4",
+    "prepare_sm120.py": "063a2d40fee0e23596db7b22490b28bc7a994cd8a8a89433811a285058ef8328",
+    "patches/sm120-compact.patch": "e840c794a4889e88687616fb66968dacd57badd43ae6f4269f33b61003ef4480",
+    "patches/sm120-memory.patch": "48d8c990c5ce606e49f83b387a2c585d63dd871c8e927cb5cad0286771df3c90",
+    "patches/sm120-tables.patch": "eab649df02bf715804c4834155d925be09f06ea1c02163bf25c9a289e4e6992b",
+    "patches/sm120-reserve.patch": "1babd9cbe3cd9206e07a73946800943ba6ce007af541283a5394fbd4710164bc"
+  },
+  "patched_sha256": {
+    "prover/build.sh": "676c78ac862150d76ec6c98b7979d24870a38e00245616f00741f1db99f80e48",
+    "prover/engine/fold.cuh": "5efa5b9ec233ee9bda2910b93a6da44c4558812187ac3fb9285b3904e969a25c",
+    "prover/engine/tiled.cuh": "8bc581b9a9ab381b71d8b9ae4d3bf079ac4c6d0a5dd98f5f2c1c679f8cef684c",
+    "prover/hash_commitment/hf_commit_once.cuh": "d9f87bff1f6cb47bc362af55db9ff00fbf8ff197705635bc54bbe17b079840e3",
+    "prover/hash_commitment/hf_range_windows.cuh": "adddfd77ac6fdb73c48bc7c1161138799363a04662977f4c61a55e3bba106332",
+    "prover/hiding/count_keys16.cuh": "61c487b88ade297b7accf66e9a0a6674c916994ce3dee0d9ff64e5f2a08e4b16",
+    "prover/hiding/forest_keys.cuh": "d6d4ba4f3a1d5d8b1d69c72fa6e8081af1f8fc20c034d65da79d18296f62dc11",
+    "prover/hiding/forest_table.cuh": "b012b2d3d4cb3aa53d20bc395827b81bee95a60fe9073a63eb83058c7437875e",
+    "prover/hiding/product_test.cuh": "91867a5b33be8a4feabdf447ab3129333aeb01bd3aee215d05cca8efe3a5370a",
+    "prover/weights_blocks/experts.cuh": "58bcedc26a464127ce8a7a3551ac19edfdf2c7843f48fde3cca26398fca93660",
+    "prover/weights_blocks/experts_in_one_launch.cuh": "e9e8269837a2126536e74ba9946907e51ac87df20cb1bfaa160462cca4cb7dcb"
+  },
+  "scope": "Native compact SM120 kernels and 4 GiB engine reserve, retaining 2 GiB driver allowance and all allocation/protocol/verifier checks. Empirical small-model workspace qualification remains required; no universal VRAM fit claim."
+}

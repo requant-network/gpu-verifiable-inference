@@ -2,7 +2,7 @@
 
 A research project by [Requant Network](https://requant.network).
 
-**Status: active research. Compact SM120 kernels pass independent GPU checks; the complete patched inference/proof cycle is still being validated.**
+**Status: active research. The complete compact SM120 commitment/inference/proof cycle is accepted by the native CPU verifier. Replicated workloads and final comparisons are in progress.**
 
 This study ports a pinned inference prover to the RTX 5060 Ti 16 GB and investigates whether exact fused arithmetic can fit consumer Blackwell's shared-memory budget. The question is concrete: can the original commitment, model execution, proof and CPU verification run while retaining all arithmetic and acceptance checks?
 
@@ -17,7 +17,7 @@ This study ports a pinned inference prover to the RTX 5060 Ti 16 GB and investig
 | Compact histogram kernels | 114 cases per seed, two seeds, 12,500,052 exact output counters in total |
 | Histogram shared memory | At most 65,536 bytes (64 KiB), including the full 16-bit key range through public bin windows |
 | First architecture/cuBLAS fallback | Full run fails at an unconditional 128 KiB histogram opt-in; retained as an unsuccessful baseline |
-| Complete corrected GPU proof | Pending; passing isolated kernels is not treated as an accepted inference proof |
+| Complete corrected GPU proof | Accepted on RTX 5060 Ti 16 GB, native CPU verifier exit 0 and `YES`; 4,160,364-byte proof retained publicly |
 
 These correctness probes ran while other CPU compilation could be active. Their incidental times do not establish a speedup. The pinned source, patch, executed script and native binary hashes are retained in [results](results).
 
@@ -37,12 +37,14 @@ The generic tiled matrix engine uses two pipeline stages, reducing its footprint
 
 Some separate lookup-forest fusion kernels still assume Hopper-sized buffers. The port selects their existing exact generic paths. The compact expert kernel remains fused. Further forest fusion is an optimization question, and its speed is not inferred from the expert experiment.
 
+The first memory-corrected complete run passed the old histogram fault but failed because the engine reserves 24 GiB of VRAM even for a small model. The consumer-card layer reserves 4 GiB, retains the separate 2 GiB driver allowance and all allocation checks, and reports the actual native pool peak. The complete small-model run passes with this budget; its key-generation engine-pool peak is 603,979,776 bytes. No universal model-fit claim is made. The packed-table accessors pass 1,179,648 exact entry checks in two cohorts, separately from the complete field/proof computation.
+
 ## Reproduction
 
 FlashProve is pinned at `9e2bdd8ff5bf9c62f18263d7dac189b0400b260c`. Patches retain Anthropic's Apache-2.0 attribution. Run as an ordinary Linux user, with newly created private work directories under ancestors that other accounts cannot modify. Preserve the upstream compiler probe, secure-path checks and verifier rules.
 
 ```sh
-python prepare_full.py build/FlashProve
+python prepare_consumer.py build/FlashProve
 cd build/FlashProve
 verifier/build.sh
 FLASH_GPU_ARCH=sm_120a prover/build.sh
@@ -78,4 +80,6 @@ The accepted stored proof uses commitment ID `79a5a2bc7a469b40df73dedf40abeb7406
 
 The C++/CUDA implementation is not formally verified by the Lean development. Native acceptance does not establish weight hiding or remove the verifier's stated external assumptions. All weights in these experiments are synthetic. There is no throughput, energy, production-model or mining-income claim yet.
 
-Remaining protocol work includes complete new GPU commitments/proofs, multiple requests, accepted public artifacts, rejecting controls on those artifacts, bounded configuration comparisons and final reports. CPU CI builds the pinned verifier and checks honest/tampered stored fixtures; it cannot rerun SM120 experiments. Original research scripts are [MIT licensed](LICENSE); patch modifications retain Apache-2.0 terms. See the [full research protocol](RESEARCH.md).
+The first accepted GPU cycle is [retained as a complete record](results/consumer-cycle1.json), with [public proof artifacts](artifacts/consumer-cycle1). Its commitment is `4f351f1f2123409da095d4df1140fcd39a06719d9061163cb62c6719ad2f1943`. Standalone process times are 36.33 s for commitment, 3.04 s for proving and 1.14 s for CPU verification; these are one observation, not a throughput distribution. Complete native coverage and assumptions accompany the proof.
+
+Remaining protocol work includes independent new commitments, multiple requests, rejecting controls on retained GPU artifacts, bounded configuration comparisons and final reports. CPU CI builds the pinned verifier and checks stored fixtures and retained public GPU proofs; it cannot rerun SM120 kernels. Original research scripts are [MIT licensed](LICENSE); patch modifications retain Apache-2.0 terms. See the [full research protocol](RESEARCH.md).
