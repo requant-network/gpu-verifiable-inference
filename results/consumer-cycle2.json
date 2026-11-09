@@ -1,0 +1,74 @@
+{
+  "utc": "2026-11-09T06:48:54.314075+00:00",
+  "configuration": "target_small_f2_roomy",
+  "command": [
+    "prover/examples/run_target_example.sh",
+    "target_small_f2_roomy",
+    "WORK"
+  ],
+  "exit_code": 0,
+  "last_line": "YES",
+  "accepted": true,
+  "script_output": "   $ cd WORK\n1. The public configuration: the parameter file, the scales, the layout of a proof's arrays\n   $ cp FLASH_PROVE/prover/examples/target_small_f2_roomy/policy.txt FLASH_PROVE/prover/examples/target_small_f2_roomy/KL.bin FLASH_PROVE/prover/examples/target_small_f2_roomy/layout.txt config/\n2. cp_commit draws a seed and commits to the weights: ivk/ is for the clients, isk/ stays with the provider\n   $ FLASH_PROVE/requant-profile-consumer-cycle2/cp_commit -weights made-up-blocks -config config -M 1 -ivk ivk -isk isk > cp_commit.log 2>&1\n   the commitment's ID, to be published: 78e959ca4ee4559b49d77fe4300dc1d75ebdb98d4529ba1a8190f03a0696e6af\n3. The request: a made-up prompt, the model's own first choices after it, and the question whether each of them is that, and which token comes next\n   $ cp FLASH_PROVE/prover/examples/target_small_f2_roomy/own_choices.req in/example.req\n4. cp_prove runs the model on the request and writes the answer and its proof\n   $ env HOME=WORK/home TMPDIR=WORK/tmp FLASH_PROVE/requant-profile-consumer-cycle2/cp_prove -isk WORK/isk -in WORK/in -out WORK/out > cp_prove.log 2>&1\n5. cp_verify: the client's one call, on public files alone, under the commitment ID; printed below: if cp_verify accepts, the answer and the files' lengths; then its line on what the proof covers, its accounting as one number (where proof of work is counted: with it and, in brackets, without it) with its caution on such figures, its line on the commitment, its exit status, its line on proof of work, and its last line, the verdict\n   $ FLASH_PROVE/requant-profile-consumer-cycle2/cp_verify config ivk in/example.req out/example.y out/example.proof -id 78e959ca4ee4559b49d77fe4300dc1d75ebdb98d4529ba1a8190f03a0696e6af > cp_verify.log\n   the answer: token 284; key 1096536, entry 535864, proof 4149620 bytes\ncovered: r=15 e=64 T=64 C=256 theta=256 cap=0 s=16 sh=8 positions=15..63 tokens=16..63 y=yes next-token=no policy=exact-match above-clip=0 (places in the request, counted from 0; y=yes: the answer is about y too; it is about nothing else; above-clip: so many of the tokens named by tokens= may cost more than C, and such a token may be any token. It is no limit on the tokens that may be any token: one that costs C or less may be any token too where the committed model's logits lie close together, and no verifier sees that. All costs, each counted as at most C, add up to at most theta times the number of these tokens)\naccounting: as one number, by the compiled bound: 126.21 bits, proof of work counted (without it: 96.23 bits)\naccounting:   that the programs compute the protocol is not proved; no figure here is a security level\ncommitment: 49 closeness rounds of the one-time files rest on another source than the bound within a third of the distance; the table has a record: the binding of the weights rests on the theorem on codes (ePrint 2025/2055, Theorem 4.6), taken as given\n   status 0\nproof of work: up to 32 bits counted in 38 rounds; with it the least round has 128.00 bits, without it 96.23 bits\nYES\n",
+  "phases": [
+    {
+      "program": "cp_commit",
+      "exit_code": 0,
+      "wall_ms": 23000.588255992625,
+      "peak_host_rss_kib": 968896
+    },
+    {
+      "program": "cp_prove",
+      "exit_code": 0,
+      "wall_ms": 2823.3341710292734,
+      "peak_host_rss_kib": 972168
+    },
+    {
+      "program": "cp_verify",
+      "exit_code": 0,
+      "wall_ms": 1137.1165299788117,
+      "peak_host_rss_kib": 158064
+    }
+  ],
+  "performance_claim": true,
+  "source_sha256": {
+    "flash_cycle.py": "417d8f0b1b1416d4d4cfc2c82df8da8283104092ca6b0562f300d938427665a3",
+    "profile_tool.py": "700240baad79aeb290510fba74abcb7401a4fbf2f04a586f51c6158cbd319eb3"
+  },
+  "binary_sha256": {
+    "cp_commit": "2c2c2a0e43c3288813ece6f5c50c10142146cc7c85464fd9b38c1908f6596f1e",
+    "cp_prove": "e270794e26f4d41150f96247a91dee60b72568077c6ca7e4e5d88bac5e4a1da6",
+    "cp_verify": "7f9efc1e86a848a3715c6cc870e465ac2a1c5e8fd1eac09e4809023de7604394"
+  },
+  "upstream_script_sha256": "448b87fde31f9785d7be0dfc56c66cd59da772198bd96be33b23030e62262580",
+  "applied_diff_sha256": "466a2d8893d0e49ba986ae7c31c6c5f0e539b4007981c2b6fe7d4f2f0cb12363",
+  "verifier_metadata": {
+    "covered:": [
+      "covered: r=15 e=64 T=64 C=256 theta=256 cap=0 s=16 sh=8 positions=15..63 tokens=16..63 y=yes next-token=no policy=exact-match above-clip=0 (places in the request, counted from 0; y=yes: the answer is about y too; it is about nothing else; above-clip: so many of the tokens named by tokens= may cost more than C, and such a token may be any token. It is no limit on the tokens that may be any token: one that costs C or less may be any token too where the committed model's logits lie close together, and no verifier sees that. All costs, each counted as at most C, add up to at most theta times the number of these tokens)"
+    ],
+    "commitment:": [
+      "commitment: 49 closeness rounds of the one-time files rest on another source than the bound within a third of the distance; the table has a record: the binding of the weights rests on the theorem on codes (ePrint 2025/2055, Theorem 4.6), taken as given"
+    ],
+    "proof of work:": [
+      "proof of work: up to 32 bits counted in 38 rounds; with it the least round has 128.00 bits, without it 96.23 bits"
+    ],
+    "result-v1": [
+      "result-v1 status=0 claim=exact-match id=78e959ca4ee4559b49d77fe4300dc1d75ebdb98d4529ba1a8190f03a0696e6af bits=128 work=32 work-rounds=38 least-round=128.00 least-round-without-work=96.23 commitment-assumed-rounds=49 record=1 r=15 e=64 T=64 tokens=16..63 y=yes policy=exact-match C=256 theta=256 cap=0 s=16 sh=8 sT=4 F=24 above-clip=0 leaf=0 stages=key,leaf,request dw=8 build=93afdaf592393a54ebd17b681d1c03295eb883f0161ff0e6ab872a3b39939595"
+    ]
+  },
+  "commitment_id": "78e959ca4ee4559b49d77fe4300dc1d75ebdb98d4529ba1a8190f03a0696e6af",
+  "artifacts_sha256": {
+    "artifacts/consumer-cycle2/cp_commit.txt": "f6b880dd43d17affeab6c33214ec03ac41a44b5b69740c2e9ea76cf0521de81c",
+    "artifacts/consumer-cycle2/cp_prove.txt": "680e094f2456f65c8d313b423ec6dec1d22ed5a5f5b61f31a464701b2642f558",
+    "artifacts/consumer-cycle2/cp_verify.txt": "d55326fa62adba636816d4f4d29bd661f783f181897115537a923b958859c137",
+    "artifacts/consumer-cycle2/in/example.req": "55655047a089095c99fac8cd13c30481c011c13c1816f27874705098220fbbe5",
+    "artifacts/consumer-cycle2/ivk/key.bin": "6dce1ec29e6281f191b94c4f146b09d084554a3ffae21bd28088a545b60cfff1",
+    "artifacts/consumer-cycle2/config/layout.txt": "a0cce649d992c6f17d1e27c68ac4b900b828ff6ef0bfe8da7c2491fed9f02225",
+    "artifacts/consumer-cycle2/config/KL.bin": "b8fb55ed7c70c4cdc7bac01e804dd0dc79349022ba7972957c7e50a29dc974a2",
+    "artifacts/consumer-cycle2/config/policy.txt": "8d9ae1dda2e503550cafade93c54c1b8ecc8eb4b6dab3b843c72a478bb892d2f",
+    "artifacts/consumer-cycle2/out/example.y": "871cd8edd0dbd8de891216d6409fba14bb5f0f72b880c5fcc512218b282298fb",
+    "artifacts/consumer-cycle2/out/example.proof": "3b36c67849c508ae2f0177bcee0bbc62afe6cd011f753ccd4f7f20eea4682f19",
+    "artifacts/consumer-cycle2/ivk/leaf/0.bin": "27d4f2fb4abfd7c382c33caae26b3ee7ee79d294647d0a899bafae5dd0851e51"
+  },
+  "proof_bytes": 4149620
+}

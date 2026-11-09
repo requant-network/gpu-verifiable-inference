@@ -10,6 +10,7 @@
 *.txt text eol=lf
 *.yml text eol=lf
 *.bin binary
+*.svg text eol=lf
 *.proof binary
 *.req binary
 *.y binary

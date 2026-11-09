@@ -1,0 +1,118 @@
+--- a/prover/build.sh
++++ b/prover/build.sh
+@@ -614,7 +614,12 @@
+   file_of device-compiler "$middle/cicc" || return 1
+   file_of device-assembler "$(PATH=$looks command -v ptxas)"
+ }
+-nvcc_base=(nvcc -O3 -std=c++17 -arch=sm_90a --extended-lambda --default-stream per-thread -I. -Xcompiler -fno-ipa-modref -DCCCL_DISABLE_NVTX -DDIGEST_WORDS=$dw)
++gpu_arch=${FLASH_GPU_ARCH:-sm_90a}
++case $gpu_arch in
++  sm_90a | sm_120a) ;;
++  *) echo "build.sh: FLASH_GPU_ARCH must be sm_90a or sm_120a" >&2; exit 2 ;;
++esac
++nvcc_base=(nvcc -O3 -std=c++17 "-arch=$gpu_arch" --extended-lambda --default-stream per-thread -I. -Xcompiler -fno-ipa-modref -DCCCL_DISABLE_NVTX -DDIGEST_WORDS=$dw)
+ # -fno-ipa-modref, for the host compiler here and in the g++ lines below, works around a bug in g++
+ # 13.3.0, which can silently delete the stores that fill an object passed by reference
+ # (verifier/tests/compiler_pass_control.sh reproduces it). cuBLASLt is for
+@@ -625,6 +630,8 @@
+ # NVTX_INJECTION64_PATH with getenv() and loads the library named there (read in that header and in
+ # nvtx3/nvtxDetail/nvtxInit.h). No program here uses NVTX. tests/serving_build_words.txt has that
+ # name, so a production program that contains it is not installed.
++# SM120 uses one shared tile per operand instead of Hopper's double/triple buffering.
++if [[ $gpu_arch == sm_120a ]]; then nvcc_base+=(-DEXPERTS_IN_ONE_LAUNCH=1 -DFLASH_EXPERT_COMPACT=1); fi
+ nvcc_base+=(-lcublasLt "${field_flags[@]}")
+ # EIDB and ETAU, if the environment sets them.
+ form=()
+--- a/prover/weights_blocks/experts.cuh
++++ b/prover/weights_blocks/experts.cuh
+@@ -48,7 +48,9 @@
+ // alone. Both forms are meant to give the same sums.
+ // Three tests that are not part of this repository compare the sums with a plain kernel's: two
+ // test the selected form, and one tests both forms (it builds only at 1).
++#ifndef EXPERTS_IN_ONE_LAUNCH
+ #define EXPERTS_IN_ONE_LAUNCH 1
++#endif
+ #if EXPERTS_IN_ONE_LAUNCH
+ #include "weights_blocks/experts_in_one_launch.cuh"
+ #endif
+--- a/prover/weights_blocks/experts_in_one_launch.cuh
++++ b/prover/weights_blocks/experts_in_one_launch.cuh
+@@ -212,6 +212,9 @@
+ //   Of the leading dimension the page says that it has to be a whole number of 16-byte units for
+ //   __half (8 elements a unit) and for float (4), and names no figure for signed char or int;
+ //   here it is 16 bytes for the signed bytes and 128 bytes or more for the sums.
++#ifndef FLASH_EXPERT_COMPACT
++#define FLASH_EXPERT_COMPACT 0
++#endif
+ constexpr int BM = 128, BK4 = 256, SKEW = 32;
+ // The tile as a product of signed bytes: 2 BM rows (b0's, then b1's) by NC = NS NL columns (limb by limb). Shared
+ // memory: two buffers of weights and three of activations; the 2 BM x NC sums are laid over them at the end. Eight
+@@ -220,7 +223,7 @@
+   static constexpr int NC = NS * NL;
+   static constexpr int A_STRIP = 2 * BM * 16 + SKEW, B_STRIP = NC * 16 + SKEW;
+   static constexpr int A_BYTES = BK4 / 16 * A_STRIP, B_BYTES = BK4 / 16 * B_STRIP;
+-  static constexpr int SMEM = 2 * A_BYTES + 3 * B_BYTES; // more than the 2 BM x NC ints of the sums take
++  static constexpr int SMEM = (FLASH_EXPERT_COMPACT ? 1 : 2) * A_BYTES + (FLASH_EXPERT_COMPACT ? 1 : 3) * B_BYTES; // more than the 2 BM x NC ints of the sums take
+   static constexpr int WCOLS = NC >= 64 ? 2 : 1, WROWS = 8 / WCOLS;
+   static constexpr int WR = 2 * BM / WROWS / 16, WC = NC / WCOLS / 16;
+   static_assert(SMEM <= 227 * 1024, "a thread block has at most 227 KB of shared memory (compute capability 9.0)");
+@@ -252,7 +255,7 @@
+   // trap the next CUDA call fails, and the process ends.
+   extern __shared__ __align__(16) unsigned char sm[];
+   if (__cvta_generic_to_shared(sm) % 32) __trap();
+-  unsigned char *const Bs = sm + 2 * Tiling::A_BYTES;
++  unsigned char *const Bs = sm + (FLASH_EXPERT_COMPACT ? 1 : 2) * Tiling::A_BYTES;
+   const int tid = threadIdx.x, warp = tid >> 5, wr = warp / Tiling::WCOLS, wc = warp % Tiling::WCOLS;
+   const int row = tid >> 1, h = tid & 1; // two threads a row: thread h takes the nibble groups c = h and c = h + 2
+   const int nk = a.K / BK4, tm = blockIdx.x, e = blockIdx.y;
+@@ -305,20 +308,31 @@
+     for (int i = 0; i < Tiling::WR; i++)
+ #pragma unroll
+       for (int j = 0; j < Tiling::WC; j++) wmma::fill_fragment(acc[i][j], 0);
+-    fetch(0);
+-    loadB(0, 0);
+-    __pipeline_commit();
++    if constexpr (!FLASH_EXPERT_COMPACT) {
++      fetch(0);
++      loadB(0, 0);
++      __pipeline_commit();
++    }
+     for (int kt = 0; kt < nk; kt++) {
+-      decode(kt & 1, kt); // this buffer was last read two stages ago, ahead of the barrier of the stage before
+-      if (kt + 1 < nk) {
+-        fetch(kt + 1);
+-        loadB((kt + 1) % 3, kt + 1); // three buffers: this one was last read two stages ago
++      if constexpr (FLASH_EXPERT_COMPACT) {
++        // A single shared tile is reused only after every warp finished its prior MMA.
++        fetch(kt);
++        decode(0, kt);
++        loadB(0, kt);
++        __pipeline_commit();
++        __pipeline_wait_prior(0);
++      } else {
++        decode(kt & 1, kt);
++        if (kt + 1 < nk) {
++          fetch(kt + 1);
++          loadB((kt + 1) % 3, kt + 1);
++        }
++        __pipeline_commit();
++        __pipeline_wait_prior(1);
+       }
+-      __pipeline_commit();
+-      __pipeline_wait_prior(1);
+       __syncthreads();
+-      const signed char *A = (const signed char *)(sm + (kt & 1) * Tiling::A_BYTES),
+-                        *B = (const signed char *)(Bs + (kt % 3) * Tiling::B_BYTES);
++      const signed char *A = (const signed char *)(sm + (FLASH_EXPERT_COMPACT ? 0 : (kt & 1)) * Tiling::A_BYTES),
++                        *B = (const signed char *)(Bs + (FLASH_EXPERT_COMPACT ? 0 : (kt % 3)) * Tiling::B_BYTES);
+ #pragma unroll
+       for (int k = 0; k < BK4 / 16; k++) {
+         wmma::fragment<wmma::matrix_a, 16, 16, 16, signed char, wmma::row_major> fa[Tiling::WR];
+@@ -334,6 +348,7 @@
+ #pragma unroll
+           for (int j = 0; j < Tiling::WC; j++) wmma::mma_sync(acc[i][j], fa[i], fb[j], acc[i][j]);
+       }
++      if constexpr (FLASH_EXPERT_COMPACT) __syncthreads();
+     }
+     __pipeline_wait_prior(0);
+     __syncthreads();

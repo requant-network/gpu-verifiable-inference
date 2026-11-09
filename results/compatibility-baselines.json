@@ -1,0 +1,37 @@
+{
+  "upstream_revision": "9e2bdd8ff5bf9c62f18263d7dac189b0400b260c",
+  "source_sha256": {
+    "prepare_flashprove.py": "4cf18678ef0fed0c9be59026bcc7fd6ba63d09879cb22e868f7625c85dc76e3a",
+    "patches/sm120.patch": "41f772ef962aa7c9a8d60aca8f0f8d9f9c8944f7c29161860ab67319c389ce5c",
+    "patches/history/sm120-compact-v1.patch": "b5762f4f7c07f7365ba16e09f05a46acef4fe6609328dadf7039dce0eae29450"
+  },
+  "architecture_only_cublas_baseline": {
+    "command": [
+      "prover/examples/run_target_example.sh",
+      "target_small_f2_roomy",
+      "WORK"
+    ],
+    "environment": {
+      "FLASH_GPU_ARCH": "sm_120a",
+      "BUILD": "FLASH_PROVE/prover/build/hc"
+    },
+    "script_exit_code": 1,
+    "cp_commit_exit_code": 5,
+    "output": "   $ cd WORK\n1. The public configuration: the parameter file, the scales, the layout of a proof's arrays\n   $ cp FLASH_PROVE/prover/examples/target_small_f2_roomy/policy.txt FLASH_PROVE/prover/examples/target_small_f2_roomy/KL.bin FLASH_PROVE/prover/examples/target_small_f2_roomy/layout.txt config/\n2. cp_commit draws a seed and commits to the weights: ivk/ is for the clients, isk/ stays with the provider\n   $ FLASH_PROVE/prover/build/hc/cp_commit -weights made-up-blocks -config config -M 1 -ivk ivk -isk isk > cp_commit.log 2>&1\nrun_target_example.sh: this step failed with status 5; the last lines of WORK/cp_commit.log:\nOpen_F's seams: a walk for the record's answers: 0.0 s\nOpen_F's seams: the record's answers from the walk's sums: 0.0 s\ncp_commit: phase anchor-table: 0.7 s\nGPU fault: invalid argument at ./hash_commitment/hf_range_windows.cuh:513\ncp_commit: the run has ended in the middle of a step: what that step had written is removed, and all that the call had made before it\n",
+    "diagnosis": "Unconditional 128 KiB histogram opt-in exceeds the SM120 99 KiB per-block capacity."
+  },
+  "compact_first_draft": {
+    "patch": "patches/history/sm120-compact-v1.patch",
+    "observed_failure": "Illegal-address failure in the earlier bounded expert campaign, before the output overlay was accounted for.",
+    "independent_resource_diagnostic": {
+      "nl3_ns32_input_bytes": 91136,
+      "nl3_ns32_output_bytes": 98304,
+      "nl4_ns32_input_bytes": 99328,
+      "nl4_ns32_output_bytes": 131072,
+      "sm120_limit_bytes": 101376
+    },
+    "limit": "Historical prototype patch and resource diagnostic retained. The complete raw failed campaign and its earlier Python driver are not part of the published evidence; no precision or timing result is claimed from that draft."
+  },
+  "performance_claim": false,
+  "scope": "Safe commit-failure output only; no failed inference response or proving-key material is exported. Final compact tests and accepted GPU cycles use the corrected patch sequence."
+}

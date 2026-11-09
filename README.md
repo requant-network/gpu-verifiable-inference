@@ -2,7 +2,7 @@
 
 A research project by [Requant Network](https://requant.network).
 
-**Status: active research. The complete compact SM120 commitment/inference/proof cycle is accepted by the native CPU verifier. Replicated workloads and final comparisons are in progress.**
+**Status: the bounded SM120 port study is complete.** Five new GPU proofs across three randomized commitments and two policies pass the original CPU verifier. See [results](RESULTS.md), [methods](METHODS.md) and [final conclusions](FINAL_REPORT.md).
 
 This study ports a pinned inference prover to the RTX 5060 Ti 16 GB and investigates whether exact fused arithmetic can fit consumer Blackwell's shared-memory budget. The question is concrete: can the original commitment, model execution, proof and CPU verification run while retaining all arithmetic and acceptance checks?
 
@@ -18,6 +18,8 @@ This study ports a pinned inference prover to the RTX 5060 Ti 16 GB and investig
 | Histogram shared memory | At most 65,536 bytes (64 KiB), including the full 16-bit key range through public bin windows |
 | First architecture/cuBLAS fallback | Full run fails at an unconditional 128 KiB histogram opt-in; retained as an unsuccessful baseline |
 | Complete corrected GPU proof | Accepted on RTX 5060 Ti 16 GB, native CPU verifier exit 0 and `YES`; 4,160,364-byte proof retained publicly |
+| Replication and independent requests | Three commitments, exact-match/clipped-gap configurations and two new next-token-only prompts; all five proofs accept |
+| Altered public artifacts | Five honest whole native calls accept; all 35 ID/request/response/proof/key/leaf controls reject |
 
 These correctness probes ran while other CPU compilation could be active. Their incidental times do not establish a speedup. The pinned source, patch, executed script and native binary hashes are retained in [results](results).
 
@@ -26,6 +28,8 @@ These correctness probes ran while other CPU compilation could be active. Their 
 The Hopper expert kernel has two A buffers and three B buffers. Its larger configurations exceed the SM120 per-block budget. The compact path keeps the original 128-row by 256-input arithmetic tile and WMMA operations, uses a single shared tile per operand, and synchronizes before reuse. It caps token tiles at sixteen slots.
 
 The memory calculation also includes the WMMA output overlay. An early input-only estimate missed that overlay and produced an illegal-address failure for a larger token tile. The corrected allocation is the maximum of input and output footprints. This failed draft is documented because apparently rejected designs can fail through implementation mistakes, rather than an invalid mathematical idea.
+
+![Source-derived shared-memory budgets and the measured SM120 limit](figures/shared-memory.png)
 
 Two independent input cohorts cover Q4/Q5 decoding, one through four signed-byte activation limbs, ragged routing, 1/17/33/65 tokens, 128/256 output rows, 256/1024 input coordinates, zero/max/min/random activations, absent and power-of-two gains, and fractional gains in eighths. The independent CPU decoder uses integer arithmetic and rational ties-to-even rounding. Every output is checked exactly, with no floating tolerance. Coverage is bounded to those scales and shapes; it is not a proof for arbitrary model weights.
 
@@ -80,6 +84,6 @@ The accepted stored proof uses commitment ID `79a5a2bc7a469b40df73dedf40abeb7406
 
 The C++/CUDA implementation is not formally verified by the Lean development. Native acceptance does not establish weight hiding or remove the verifier's stated external assumptions. All weights in these experiments are synthetic. There is no throughput, energy, production-model or mining-income claim yet.
 
-The first accepted GPU cycle is [retained as a complete record](results/consumer-cycle1.json), with [public proof artifacts](artifacts/consumer-cycle1). Its commitment is `4f351f1f2123409da095d4df1140fcd39a06719d9061163cb62c6719ad2f1943`. Standalone process times are 36.33 s for commitment, 3.04 s for proving and 1.14 s for CPU verification; these are one observation, not a throughput distribution. Complete native coverage and assumptions accompany the proof.
+The first accepted GPU cycle is [retained as a complete record](results/consumer-cycle1.json), with [public proof artifacts](artifacts/consumer-cycle1). Its commitment is `4f351f1f2123409da095d4df1140fcd39a06719d9061163cb62c6719ad2f1943`. Standalone process times are 36.33 s for commitment, 3.04 s for proving and 1.14 s for CPU verification; these are one observation, not a throughput distribution. Complete native coverage and assumptions accompany every proof. The [full phase table](results/proofs-summary.csv) includes all three commitments and the two added prompts. The synthetic weight construction is controlled; independent commitment randomness is not a population of independently trained models.
 
-Remaining protocol work includes independent new commitments, multiple requests, rejecting controls on retained GPU artifacts, bounded configuration comparisons and final reports. CPU CI builds the pinned verifier and checks stored fixtures and retained public GPU proofs; it cannot rerun SM120 kernels. Original research scripts are [MIT licensed](LICENSE); patch modifications retain Apache-2.0 terms. See the [full research protocol](RESEARCH.md).
+The [final report](FINAL_REPORT.md) maps every protocol gate to retained evidence and prioritizes larger-memory qualification, compact forest fusion and declared service-batching workloads as follow-up work. CPU CI builds the pinned verifier and checks stored fixtures and all five retained public GPU proofs; it cannot rerun SM120 kernels. Original research scripts are [MIT licensed](LICENSE); patch modifications retain Apache-2.0 terms. See the [full research protocol](RESEARCH.md) and [related work](RELATED_WORK.md).
