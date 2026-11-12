@@ -18,4 +18,5 @@ jobs:
       - run: python cpu_study.py build/FlashProve --output build/ci-verifier.json
       - run: python verify_artifacts.py build/FlashProve --output build/ci-public-proofs.json
       - run: python generate_report.py
-      - run: git diff --exit-code -- results/proofs-summary.csv results/report-provenance.json RESULTS.md FINAL_REPORT.md
+      - run: python verify_followups.py
+      - run: git diff --exit-code -- results/followup-summary.csv results/proofs-summary.csv results/report-provenance.json RESULTS.md FINAL_REPORT.md

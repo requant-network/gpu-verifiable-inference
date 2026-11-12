@@ -45,3 +45,7 @@ First, enlarge the synthetic workload while measuring the true device-memory pea
 Second, study the separate forest fusion kernels with compact tiles. The existing exact generic fallback provides a useful correctness baseline; a new fused implementation needs its own independent arithmetic and complete-proof checks. Third, benchmark service batching and request reuse with a declared repeated-latency design before reporting throughput or amortized setup gains.
 
 Production weights, security evaluation, hiding experiments and formal implementation verification are outside this completed engineering study. [Results](RESULTS.md), [Methods](METHODS.md), [related work](RELATED_WORK.md), the [patch guide](patches/README.md) and the [protocol](RESEARCH.md) retain the concrete reproduction and claim boundaries.
+
+## Follow-up closure, 12 November 2026
+
+The [follow-up report](FOLLOWUP_REPORT.md) resolves the concrete priorities above with additional experiments, resource gates and updated conclusions. Its findings supersede the open-work wording in this historical campaign.

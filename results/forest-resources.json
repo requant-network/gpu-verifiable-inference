@@ -1,0 +1,46 @@
+{
+  "revision": "9e2bdd8ff5bf9c62f18263d7dac189b0400b260c",
+  "shared_memory_limit": 101376,
+  "first_range_bytes": 96640,
+  "cases": [
+    {
+      "columns": 128,
+      "stored_bytes": 219136,
+      "second_bytes": 165888,
+      "stored_fits": false,
+      "second_fits": false,
+      "pinned_configuration": true,
+      "interpretation": "Pinned source storage formula"
+    },
+    {
+      "columns": 64,
+      "stored_bytes": 115712,
+      "second_bytes": 116736,
+      "stored_fits": false,
+      "second_fits": false,
+      "pinned_configuration": false,
+      "interpretation": "Hypothetical storage only; not an implemented or correctness-qualified kernel"
+    },
+    {
+      "columns": 32,
+      "stored_bytes": 64000,
+      "second_bytes": 92160,
+      "stored_fits": true,
+      "second_fits": true,
+      "pinned_configuration": false,
+      "interpretation": "Hypothetical storage only; not an implemented or correctness-qualified kernel"
+    }
+  ],
+  "source_sha256": {
+    "forest_resources.py": "0e1eb088bd2b8dd9ef1ef1ba2a7d5f65089f2ba2d3611da94fed8a68c73c86ab"
+  },
+  "result_sha256": {
+    "environment.json": "3847220291929b513c115a8a883f2535d09573ddef501875938657fa717c2776"
+  },
+  "upstream_source_sha256": {
+    "forest_fused.cuh": "251c4b85809a0f3f91d7e750a3bc4976447d8c4e1fc945da25c71acd1d341695",
+    "forest_fused_first.cuh": "3bcee8a5edc6bc4a1cb005eb5375d55e41e16d4cf5f4364dca3fb59c0d281cc9",
+    "forest_fused_second.cuh": "a76112832ce30c7b2056a23390d85ee90fba296ce6360c135dc23ad11b87663a"
+  },
+  "scope": "Source-derived resource qualification, no new GPU execution or performance claim. 128-column formulas are the pinned implementation;64/32-column formulas are hypothetical storage sensitivity only. A smaller width alone does not qualify algorithm indexing, arithmetic, pipeline synchronization or full proofs. Preserve the already-verified generic fallback."
+}

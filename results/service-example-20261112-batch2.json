@@ -1,0 +1,31 @@
+{
+  "accepted": true,
+  "configuration": "target_small_f2_roomy",
+  "commitment_id": "4f351f1f2123409da095d4df1140fcd39a06719d9061163cb62c6719ad2f1943",
+  "verifier_metadata": {
+    "covered:": [
+      "covered: r=63 e=64 T=64 C=256 theta=256 cap=0 s=16 sh=8 positions=63..63 tokens=none y=yes next-token=yes policy=exact-match above-clip=0 (places in the request, counted from 0; y=yes: the answer is about y too; it is about nothing else; above-clip: so many of the tokens named by tokens= may cost more than C, and such a token may be any token. It is no limit on the tokens that may be any token: one that costs C or less may be any token too where the committed model's logits lie close together, and no verifier sees that. All costs, each counted as at most C, add up to at most theta times the number of these tokens)"
+    ],
+    "commitment:": [
+      "commitment: 49 closeness rounds of the one-time files rest on another source than the bound within a third of the distance; the table has a record: the binding of the weights rests on the theorem on codes (ePrint 2025/2055, Theorem 4.6), taken as given"
+    ],
+    "proof of work:": [
+      "proof of work: up to 32 bits counted in 38 rounds; with it the least round has 128.00 bits, without it 96.23 bits"
+    ],
+    "result-v1": [
+      "result-v1 status=0 claim=next-token id=4f351f1f2123409da095d4df1140fcd39a06719d9061163cb62c6719ad2f1943 bits=128 work=32 work-rounds=38 least-round=128.00 least-round-without-work=96.23 commitment-assumed-rounds=49 record=1 r=63 e=64 T=64 tokens=none y=yes policy=exact-match C=256 theta=256 cap=0 s=16 sh=8 sT=4 F=24 above-clip=0 leaf=0 stages=key,leaf,request dw=8 build=93afdaf592393a54ebd17b681d1c03295eb883f0161ff0e6ab872a3b39939595"
+    ]
+  },
+  "performance_claim": false,
+  "artifacts_sha256": {
+    "artifacts/service-20261112-batch2/in/example.req": "d9ea6f3e5607e685128f2515a7bc8bd69c20f81437fb691a422194e197fe5699",
+    "artifacts/service-20261112-batch2/ivk/key.bin": "cc987eba6079af835cb8f29b6f64baa067cde3e11d00c4704edef15c46fddd15",
+    "artifacts/service-20261112-batch2/config/layout.txt": "a0cce649d992c6f17d1e27c68ac4b900b828ff6ef0bfe8da7c2491fed9f02225",
+    "artifacts/service-20261112-batch2/config/KL.bin": "b8fb55ed7c70c4cdc7bac01e804dd0dc79349022ba7972957c7e50a29dc974a2",
+    "artifacts/service-20261112-batch2/config/policy.txt": "8d9ae1dda2e503550cafade93c54c1b8ecc8eb4b6dab3b843c72a478bb892d2f",
+    "artifacts/service-20261112-batch2/out/example.y": "84fc05949dc1e486652a4ed316afb6434e9437eb30b714594a1d0b4205776602",
+    "artifacts/service-20261112-batch2/out/example.proof": "ecb49f8dfffa818b7649c24a6498b164f2f9ca7bb794a18154b667c0200188cd",
+    "artifacts/service-20261112-batch2/ivk/leaf/0.bin": "e2c39662e948280c06a7e7e920ea425d8caa036b7c6046b46bd29b1cebb001f1"
+  },
+  "scope": "First timed observation, first request of the declared batch. All requests of all observations checked by native CPU verifier; only this representative artifact is public."
+}

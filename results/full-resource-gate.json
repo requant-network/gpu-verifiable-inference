@@ -1,0 +1,27 @@
+{
+  "utc": "2026-11-12T18:09:36.589521+00:00",
+  "configuration": "target_full_f2",
+  "command": [
+    "prover/examples/run_target_example.sh",
+    "target_full_f2",
+    "WORK"
+  ],
+  "exit_code": 2,
+  "last_line": "run_target_example.sh: target_full_f2 is a large configuration (the second and third words of its line table add up to 43; at the small ones to at most 34): runs at full size, 43, have used some 270 GB of host memory, and this script starts a large one only where at least 280 GB are available. Found: 58061120 kB available (about 59 GB). With too little memory the run can exhaust it, and the kernel may then end other processes too. Nothing was created. Stop other programs of your own, raise the container's memory limit, or use a larger machine; target_small_f2_roomy shows the same steps at a small size. The three programs themselves do not look at the memory: whoever knows that this configuration needs less can call them by hand, as the script prints them at a small size",
+  "accepted": false,
+  "script_output": "run_target_example.sh: target_full_f2 is a large configuration (the second and third words of its line table add up to 43; at the small ones to at most 34): runs at full size, 43, have used some 270 GB of host memory, and this script starts a large one only where at least 280 GB are available. Found: 58061120 kB available (about 59 GB). With too little memory the run can exhaust it, and the kernel may then end other processes too. Nothing was created. Stop other programs of your own, raise the container's memory limit, or use a larger machine; target_small_f2_roomy shows the same steps at a small size. The three programs themselves do not look at the memory: whoever knows that this configuration needs less can call them by hand, as the script prints them at a small size\n",
+  "phases": [],
+  "performance_claim": false,
+  "source_sha256": {
+    "flash_cycle.py": "417d8f0b1b1416d4d4cfc2c82df8da8283104092ca6b0562f300d938427665a3",
+    "profile_tool.py": "700240baad79aeb290510fba74abcb7401a4fbf2f04a586f51c6158cbd319eb3"
+  },
+  "binary_sha256": {
+    "cp_commit": "2c2c2a0e43c3288813ece6f5c50c10142146cc7c85464fd9b38c1908f6596f1e",
+    "cp_prove": "e270794e26f4d41150f96247a91dee60b72568077c6ca7e4e5d88bac5e4a1da6",
+    "cp_verify": "7f9efc1e86a848a3715c6cc870e465ac2a1c5e8fd1eac09e4809023de7604394"
+  },
+  "upstream_script_sha256": "448b87fde31f9785d7be0dfc56c66cd59da772198bd96be33b23030e62262580",
+  "applied_diff_sha256": "466a2d8893d0e49ba986ae7c31c6c5f0e539b4007981c2b6fe7d4f2f0cb12363",
+  "limitation": "No rejected response, proof or private proving-key material is exported. This is an unsuccessful compatibility experiment."
+}

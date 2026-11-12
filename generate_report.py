@@ -132,6 +132,7 @@ Second, study the separate forest fusion kernels with compact tiles. The existin
 
 Production weights, security evaluation, hiding experiments and formal implementation verification are outside this completed engineering study. [Results](RESULTS.md), [Methods](METHODS.md), [related work](RELATED_WORK.md), the [patch guide](patches/README.md) and the [protocol](RESEARCH.md) retain the concrete reproduction and claim boundaries.
 '''
+final += '\n## Follow-up closure, 12 November 2026\n\nThe [follow-up report](FOLLOWUP_REPORT.md) resolves the concrete priorities above with additional experiments, resource gates and updated conclusions. Its findings supersede the open-work wording in this historical campaign.\n'
 (root/'RESULTS.md').write_text(results,encoding='utf-8',newline='\n');(root/'FINAL_REPORT.md').write_text(final,encoding='utf-8',newline='\n')
 record=dict(source_sha256={p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in ['generate_report.py','plot_memory.py']},
     artifacts_sha256={p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in ['RESULTS.md','FINAL_REPORT.md','results/proofs-summary.csv','figures/shared-memory.png','figures/shared-memory.svg']},

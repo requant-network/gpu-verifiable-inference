@@ -1,0 +1,9 @@
+file,case,seed,application,n,m,k,p,columns,steps,payload_bytes,batch,variant,pattern,variant_scope,median_ms,p95_ms,repetitions
+service-replication.json,0,20261212,,,,,,,,,1,,,samples_ms,3279.344556009164,3979.829363001045,30
+service-replication.json,1,20261212,,,,,,,,,2,,,samples_ms,4052.917688997695,4483.800984977279,30
+service-replication.json,2,20261212,,,,,,,,,4,,,samples_ms,5532.214312494034,6085.44792997418,30
+service-replication.json,3,20261212,,,,,,,,,1,,,samples_ms,3303.7180525134318,3576.6202889499255,30
+service-study.json,0,20261112,,,,,,,,,1,,,samples_ms,3223.0219630000647,3827.319295029156,30
+service-study.json,1,20261112,,,,,,,,,2,,,samples_ms,4075.58815649827,4679.529454035219,30
+service-study.json,2,20261112,,,,,,,,,4,,,samples_ms,5607.810489018448,6077.277094009332,30
+service-study.json,3,20261112,,,,,,,,,1,,,samples_ms,3249.8904045205563,3825.110098987352,30
